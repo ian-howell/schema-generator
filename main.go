@@ -50,7 +50,7 @@ var rootCmd = &cobra.Command{
 					return err
 				}
 			} else {
-				_, err = out.Write(schema)
+				_, err = out.Write(append(schema, '\n'))
 				if err != nil {
 					return err
 				}

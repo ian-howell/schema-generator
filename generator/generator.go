@@ -83,6 +83,9 @@ func parsePropertiesFromYAML(values map[string]interface{}) map[string]map[strin
 
 func parseItemsFromYAML(items []interface{}) map[string]interface{} {
 	properties := make(map[string]interface{})
+	if len(items) == 0 {
+		return properties
+	}
 	v := items[0]
 	// the following types are the only types possible from unmarshalling
 	switch v := v.(type) {

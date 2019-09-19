@@ -13,9 +13,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use: "schemagen",
-	Short: "schemagen takes JSON/YAML and outputs a skeleton schema",
-	Args: cobra.MinimumNArgs(1),
+	Use:           "schemagen",
+	Short:         "schemagen takes JSON/YAML and outputs a skeleton schema",
+	Args:          cobra.MinimumNArgs(1),
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filenames := args
@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 			name := strings.Split(basename, ".")[0]
 
 			schema := schemagen.GenerateSchema(name, values)
-			schemaJSON, err := schema.JSON(2)
+			schemaJSON, err := schema.JSON(o.indentLevel)
 			if err != nil {
 				return err
 			}
@@ -40,6 +40,19 @@ var rootCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+
+type Options struct {
+	indentLevel    int
+}
+
+var o Options
+
+func init() {
+	fs := rootCmd.PersistentFlags()
+	fs.IntVarP(&o.indentLevel, "indent", "i", -1,
+		"The number of spaces to indent at each level. "+
+			"Default (-1) will print on a single line")
 }
 
 func main() {

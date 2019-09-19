@@ -14,7 +14,7 @@ type Schema map[string]interface{}
 
 // JSON encodes the Schema into a JSON string.
 func (s Schema) JSON(indent int) (string, error) {
-	if indent > 0 {
+	if indent >= 0 {
 		b, err := json.MarshalIndent(s, "", strings.Repeat(" ", indent))
 		return string(b), err
 	}

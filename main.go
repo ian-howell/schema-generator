@@ -13,7 +13,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "schemagen",
+	Use:           "schemagen file [file...]",
 	Short:         "schemagen takes JSON/YAML and outputs a skeleton schema",
 	Args:          cobra.MinimumNArgs(1),
 	SilenceErrors: true,

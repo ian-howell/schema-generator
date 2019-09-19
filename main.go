@@ -18,10 +18,42 @@ var rootCmd = &cobra.Command{
 	Args:          cobra.MinimumNArgs(1),
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		isDir, err := checkIfDir(o.outputLocation)
+		if err != nil {
+			return err
+		}
+
+		out := cmd.OutOrStdout()
+		if isDir {
+			err = os.MkdirAll(o.outputLocation, 0666)
+			if err != nil {
+				return err
+			}
+		} else if o.outputLocation != "" {
+			// !isDir && o.outputLocation != ""
+			out, err = os.Create(o.outputLocation)
+			if err != nil {
+				return err
+			}
+		}
+
 		filenames := args
 		for _, filename := range filenames {
-			if err := generateSchemaForFile(filename); err != nil {
+			schemaName := generateSchemaName(filename)
+			schema, err := generateSchemaForFile(filename, schemaName)
+			if err != nil {
 				return err
+			}
+			if isDir {
+				err = outputToDirectory(schema, o.outputLocation, schemaName)
+				if err != nil {
+					return err
+				}
+			} else {
+				_, err = out.Write(schema)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		return nil
@@ -29,6 +61,7 @@ var rootCmd = &cobra.Command{
 }
 
 type Options struct {
+	outputLocation string
 	indentLevel    int
 }
 
@@ -36,6 +69,10 @@ var o Options
 
 func init() {
 	fs := rootCmd.PersistentFlags()
+	fs.StringVarP(&o.outputLocation, "output", "o", "",
+		"Output file. Providing a directory will output "+
+			"one schema per input into the directory. "+
+			"Leave empty to print to stdout")
 	fs.IntVarP(&o.indentLevel, "indent", "i", -1,
 		"The number of spaces to indent at each level. "+
 			"Default (-1) will print on a single line")
@@ -49,23 +86,33 @@ func main() {
 	}
 }
 
-func generateSchemaForFile(filename string) error {
+func generateSchemaForFile(filename, schemaName string) ([]byte, error) {
 	values, err := schemagen.ReadYAMLFile(filename)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
+	schema := schemagen.GenerateSchema(schemaName, values)
+	return schema.JSON(o.indentLevel)
+}
 
+func generateSchemaName(filename string) string {
 	basename := filepath.Base(filename)
-	name := strings.Split(basename, ".")[0]
+	return strings.Split(basename, ".")[0]
+}
 
-	schema := schemagen.GenerateSchema(name, values)
-	schemaJSON, err := schema.JSON(o.indentLevel)
-	if err != nil {
-		return err
+func checkIfDir(dirName string) (isDir bool, err error) {
+	var fi os.FileInfo
+	fi, err = os.Stat(dirName)
+	isDir = (err == nil) && fi.IsDir()
+	if os.IsNotExist(err) {
+		// Non-existence is not an error
+		err = nil
 	}
+	return isDir, err
+}
 
-	outputBasename := strings.Join([]string{name, "schema", "json"}, ".")
-	outputFilename := filepath.Join(filepath.Dir(filename), outputBasename)
-	ioutil.WriteFile(outputFilename, []byte(schemaJSON), 0644)
-	return nil
+func outputToDirectory(schema []byte, dirName, schemaName string) error {
+	outputBasename := strings.Join([]string{schemaName, "schema", "json"}, ".")
+	outputFilename := filepath.Join(dirName, outputBasename)
+	return ioutil.WriteFile(outputFilename, schema, 0666)
 }

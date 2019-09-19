@@ -12,15 +12,12 @@ import (
 // Schema represents the document structure to validate the values.yaml file against
 type Schema map[string]interface{}
 
-// JSON encodes the Schema into a JSON string.
-func (s Schema) JSON(indent int) (string, error) {
+// JSON encodes the Schema into JSON.
+func (s Schema) JSON(indent int) ([]byte, error) {
 	if indent >= 0 {
-		b, err := json.MarshalIndent(s, "", strings.Repeat(" ", indent))
-		return string(b), err
+		return json.MarshalIndent(s, "", strings.Repeat(" ", indent))
 	}
-
-	b, err := json.Marshal(s)
-	return string(b), err
+	return json.Marshal(s)
 }
 
 // ReadYAML will parse YAML byte data into a map[string]interface{}.

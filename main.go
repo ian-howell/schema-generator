@@ -20,23 +20,9 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filenames := args
 		for _, filename := range filenames {
-			values, err := schemagen.ReadYAMLFile(filename)
-			if err != nil {
+			if err := generateSchemaForFile(filename); err != nil {
 				return err
 			}
-
-			basename := filepath.Base(filename)
-			name := strings.Split(basename, ".")[0]
-
-			schema := schemagen.GenerateSchema(name, values)
-			schemaJSON, err := schema.JSON(o.indentLevel)
-			if err != nil {
-				return err
-			}
-
-			outputBasename := strings.Join([]string{name, "schema", "json"}, ".")
-			outputFilename := filepath.Join(filepath.Dir(filename), outputBasename)
-			ioutil.WriteFile(outputFilename, []byte(schemaJSON), 0644)
 		}
 		return nil
 	},
@@ -61,4 +47,25 @@ func main() {
 		fmt.Fprintf(out, "Error: %s\n", err.Error())
 		os.Exit(1)
 	}
+}
+
+func generateSchemaForFile(filename string) error {
+	values, err := schemagen.ReadYAMLFile(filename)
+	if err != nil {
+		return err
+	}
+
+	basename := filepath.Base(filename)
+	name := strings.Split(basename, ".")[0]
+
+	schema := schemagen.GenerateSchema(name, values)
+	schemaJSON, err := schema.JSON(o.indentLevel)
+	if err != nil {
+		return err
+	}
+
+	outputBasename := strings.Join([]string{name, "schema", "json"}, ".")
+	outputFilename := filepath.Join(filepath.Dir(filename), outputBasename)
+	ioutil.WriteFile(outputFilename, []byte(schemaJSON), 0644)
+	return nil
 }
